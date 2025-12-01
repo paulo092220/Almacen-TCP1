@@ -90,6 +90,9 @@ export interface Consignment {
 export interface AppSettings {
   useCustomSavePath: boolean; // If true, tries to use FileSystem API to ask for location
   lastSyncDate?: string;
+  apiKey?: string;
+  ticketHeader?: string;
+  ticketFooter?: string;
 }
 
 export interface AppState {

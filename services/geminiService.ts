@@ -1,14 +1,14 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AppState, ConsignmentStatus, TransactionType } from "../types";
 
 export const analyzeBusinessData = async (
-  data: AppState, 
+  data: AppState,
   query: string,
   userApiKey?: string
 ): Promise<string> => {
   // 1. Resolve API Key: User Input > Env Var (Standard) > Vite Env Var
-  const apiKey = userApiKey || process.env.API_KEY || (import.meta as any).env?.VITE_API_KEY;
+  const apiKey = userApiKey || (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_API_KEY;
 
   // 2. Check Internet Connection
   if (!navigator.onLine) {
@@ -17,11 +17,12 @@ export const analyzeBusinessData = async (
 
   // 3. Check API Key Availability
   if (!apiKey) {
-    return "⚠️ **Falta configuración de API Key**\n\nPara usar el asistente, necesitas una API Key de Gemini.\n\n**Opciones de Configuración:**\n1. Ingresa la clave en la pestaña **Configuración > Inteligencia Artificial**.\n2. O agrega `VITE_API_KEY=tu_clave` en un archivo `.env` en la carpeta del proyecto.\n\n(Consigue tu clave gratis en aistudio.google.com)";
+    return "⚠️ **Falta configuración de API Key**\n\nPara usar el asistente, necesitas una API Key de Gemini.\n\n**Opciones de Configuración:**\n1. Ingresa la clave en la pestaña **Configuración > Inteligencia Artificial**.\n2. O agrega `VITE_GEMINI_API_KEY=tu_clave` en un archivo `.env` en la carpeta del proyecto.\n\n(Consigue tu clave gratis en aistudio.google.com)";
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     
     // --- Pre-process Data for Better AI Context ---
     
@@ -96,12 +97,11 @@ export const analyzeBusinessData = async (
       5. Sé motivador pero realista.
     `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: context,
-    });
+    const result = await model.generateContent(context);
+    const response = await result.response;
+    const text = response.text();
 
-    return response.text || "La IA analizó los datos pero no generó una respuesta textual.";
+    return text || "La IA analizó los datos pero no generó una respuesta textual.";
   } catch (error) {
     console.error("Error calling Gemini:", error);
     return "❌ **Error de Conexión con IA**\n\nHubo un problema al comunicarse con los servidores de Google. Verifica tu conexión a internet o tu API Key.";
